@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<meta name="theme-color" content="#E2001A"/>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Maroc Telecom – Zone Voula</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="map"></div>
+
+<header class="topbar">
+  <div class="logo" id="logo"><img id="logoImg" alt="Maroc Telecom" hidden><svg id="logoSvg" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5" fill="#fff"/></svg></div>
+  <div class="title">Maroc Telecom<small>Vérification de couverture</small></div>
+  <div class="badge" id="statusBadge"><i></i><span id="statusText">Chargement</span></div>
+</header>
+
+<button class="fab" id="camBtn" onclick="openCamera()" aria-label="Caméra GPS" title="Caméra GPS">
+  <svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+</button>
+<button class="fab" id="layerBtn" onclick="toggleBase()" aria-label="Satellite" title="Satellite / Plan">
+  <svg class="i" viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5-10-5z"/><path d="m2 13 10 5 10-5"/></svg>
+</button>
+<button class="fab" id="locateBtn" onclick="locateMe()" aria-label="Ma position" title="Ma position">
+  <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>
+</button>
+
+<div class="sheet collapsed" id="sheet">
+  <div class="dragzone" id="dragzone">
+    <div class="handle"></div>
+    <div class="summary">
+      <div class="preview empty" id="preview"><svg class="i" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span id="previewText">Aucun point choisi</span></div>
+      <button class="btn btn-red quick" id="quickCheck" onclick="checkPoint()" disabled>Vérifier</button>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="photo-row">
+      <button class="btn btn-red" onclick="openCamera()">
+        <svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Caméra GPS</button>
+      <button class="btn btn-dark" onclick="pickPhoto()">
+        <svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Galerie</button>
+    </div>
+    <input type="file" id="camInput" accept="image/*" capture="environment" hidden>
+    <input type="file" id="galInput" accept="image/*" hidden>
+
+    <div class="seg">
+      <button id="btnPick" class="active" onclick="setMode('pick')"><svg class="i" viewBox="0 0 24 24"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>Sur la carte</button>
+      <button id="btnManual" onclick="setMode('manual')"><svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Saisie manuelle</button>
+    </div>
+    <div class="hint" id="hint">Touchez la carte pour choisir la position du client : le résultat s'affiche aussitôt.</div>
+
+    <div class="paste hidden" id="pasteBox">
+      <input id="paste" placeholder="Collez : 35.0032, -5.9164 ou un lien Google Maps" inputmode="text" autocomplete="off">
+      <small>Les coordonnées sont détectées et vérifiées automatiquement.</small>
+    </div>
+
+    <div class="row">
+      <div class="field"><label for="lat">Latitude</label><input type="number" id="lat" step="0.000001" placeholder="35.0032" disabled inputmode="decimal"></div>
+      <div class="field"><label for="lng">Longitude</label><input type="number" id="lng" step="0.000001" placeholder="-5.9164" disabled inputmode="decimal"></div>
+    </div>
+
+    <button class="btn btn-red" id="checkBtn" onclick="checkPoint()" disabled>Vérifier maintenant</button>
+    <button class="btn btn-line" onclick="resetAll()">Réinitialiser</button>
+
+    <div id="result"></div>
+
+    <div class="hist hidden" id="hist">
+      <div class="hist-head">
+        <h4>Dernières vérifications</h4>
+        <button class="clear" id="clearBtn" onclick="clearHistory()"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m6 6 1 14h10l1-14"/></svg><span id="clearTxt">Tout effacer</span></button>
+      </div>
+      <div id="histList"></div>
+    </div>
+
+    <div class="upload"><label>
+      <svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+      Importer un fichier KML / KMZ<input type="file" id="fileInput" accept=".kml,.kmz"></label></div>
+  </div>
+</div>
+
+<!-- Caméra GPS plein écran -->
+<div id="cam" role="dialog" aria-label="Caméra GPS">
+  <video id="camVideo" autoplay playsinline muted></video>
+  <div id="flash"></div>
+  <div class="cam-top">
+    <div class="gps-chip" id="gpsChip"><i></i><span id="gpsText">GPS : recherche…</span></div>
+    <button class="cam-x" onclick="closeCamera()" aria-label="Fermer"><svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="cam-msg" id="camMsg"></div>
+  <div class="cam-bottom">
+    <div class="cam-coords" id="camCoords"></div>
+    <button class="shutter" id="shutter" onclick="snap()" disabled aria-label="Prendre la photo"></button>
+  </div>
+</div>
+
+<div id="loading"><div class="spinner"></div><div id="loadText">Chargement des données...</div><div class="bar"><div id="loadBar"></div></div></div>
+<div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
